@@ -1,10 +1,11 @@
 [Unit]
 Description=External Package Mountpoints
-Before=openswan.service xl2tpd.service
 
 [Service]
-ExecStart=/usr/local/bin/arch-pkg-mounts start
-ExecStop=/usr/local/bin/arch-pkg-mounts stop
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/pacmnt start
+ExecStop=/usr/local/bin/pacmnt stop
 
 [Install]
 WantedBy=multi-user.target 
