@@ -32,7 +32,7 @@
 # Device parameters.
 LABEL=${LABEL:-Expansion}
 DIRS=(var/abs var/cache/pacman/pkg var/cache/pkgfile var/lib/pacman/sync)
-DPATH="Arch Linux Packages/`uname -m`"
+DPATH="Arch Linux Mounts/Packages/`uname -m`"
 
 #Derived parameters
 DEVICE=`realpath "/dev/disk/by-label/${LABEL}"`
@@ -46,7 +46,7 @@ function mount_dev() {
 
 function unmount_dev() {
     echo "Unmounting ${LABEL} device..."
-    sudo umount "${MPATH}" || { echo "Unmounting ${LABEL} device failed. Aborting..." 1>&2 ; exit ; }
+    sudo umount -A "${MPATH}" || { echo "Unmounting ${LABEL} device failed. Aborting..." 1>&2 ; exit ; }
 }
 
 function mount_binds(){

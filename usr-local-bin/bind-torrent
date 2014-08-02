@@ -30,7 +30,7 @@
 # Device parameters.
 LABEL=${LABEL:-Expansion}
 DIRS=(srv/torrent var/lib/transmission)
-DPATH="Torrents"
+DPATH="Arch Linux Mounts/Torrents"
 
 #Derived parameters
 DEVICE=`realpath "/dev/disk/by-label/${LABEL}"`
@@ -44,7 +44,7 @@ function mount_dev() {
 
 function unmount_dev() {
     echo "Unmounting ${LABEL} device..."
-    sudo umount "${MPATH}" || { echo "Unmounting ${LABEL} device failed. Aborting..." 1>&2 ; exit ; }
+    sudo umount -A "${MPATH}" || { echo "Unmounting ${LABEL} device failed. Aborting..." 1>&2 ; exit ; }
 }
 
 function mount_binds(){
