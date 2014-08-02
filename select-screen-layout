@@ -1,0 +1,45 @@
+#!/bin/sh
+
+#####
+#
+# Prompt user with a dialog to select and apply existing xrandr states saved in ~/.screenlayouts
+#
+#####
+#
+# Copyright 2014 James An
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# 
+#####
+
+DIR=${DIR:-~/.screenlayout}
+LAYOUTS="`find "${DIR}" -type f -printf '%p\n'`"
+
+LAYOUTS="`
+echo "${LAYOUTS}" | while read LAYOUT ; do
+    echo "${LAYOUT}"
+    basename -s '.sh' "${LAYOUT}" | sed -r -e 's/\b([a-z])/\U\1/g' -e 's/-/ to /'
+done
+`"
+
+
+SELECTION=`echo "$LAYOUTS" | \
+    zenity --list \
+           --separator='\n' \
+           --title="Multi-monitor layouts" \
+           --text='Select a layout option:' \
+           --column='' --column='' \
+           --hide-column=1 --hide-header 2> /dev/null`
+
+exec "$SELECTION"

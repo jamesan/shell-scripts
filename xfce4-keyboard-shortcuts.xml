@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml -->
-
 <channel name="xfce4-keyboard-shortcuts" version="1.0">
   <property name="commands" type="empty">
     <property name="default" type="empty">
@@ -24,19 +22,18 @@
       <property name="XF86Mail" type="string" value="exo-open --launch MailReader"/>
       <property name="override" type="bool" value="true"/>
       <property name="&lt;Super&gt;w" type="string" value="exo-open --launch WebBrowser"/>
-      <property name="&lt;Alt&gt;F4" type="string" value="wmctrl -c :ACTIVE: "/>
       <property name="F11" type="string" value="wmctrl -r :ACTIVE: -b toggle,fullscreen"/>
       <property name="&lt;Super&gt;e" type="string" value="exo-open --launch FileManager"/>
-      <property name="&lt;Super&gt;d" type="string" value="xfce4-popup-directorymenu"/>
       <property name="&lt;Super&gt;z" type="string" value="xfce4-terminal --command=byobu --hide-menubar --hide-toolbar --maximize"/>
-      <property name="&lt;Super&gt;a" type="string" value="xfdesktop --menu"/>
-      <property name="XF86AudioRaiseVolume" type="string" value="amixer set Master 5%+"/>
-      <property name="XF86AudioLowerVolume" type="string" value="amixer set Master 5%-"/>
-      <property name="XF86AudioMute" type="string" value="amixer set Master toggle"/>
-      <property name="Super_R" type="string" value="xfce4-appfinder"/>
-      <property name="&lt;Super&gt;Left" type="string" value="winctrl max-left"/>
-      <property name="&lt;Super&gt;Right" type="string" value="winctrl max-right"/>
-      <property name="&lt;Super&gt;Up" type="string" value="winctrl max-toggle"/>
+      <property name="&lt;Primary&gt;Super_L" type="string" value="xfce4-popup-whiskermenu"/>
+      <property name="&lt;Super&gt;g" type="string" value="geany"/>
+      <property name="XF86AudioRaiseVolume" type="string" value="amixer sset &apos;Master&apos; 5%+"/>
+      <property name="XF86AudioLowerVolume" type="string" value="amixer sset &apos;Master&apos; 5%-"/>
+      <property name="XF86AudioMute" type="string" value="amixer sset &apos;Master&apos; toggle"/>
+      <property name="&lt;Super&gt;Up" type="string" value="wmctrl -r :ACTIVE: -b toggle,maximized_vert,maximized_horz"/>
+      <property name="&lt;Super&gt;Down" type="string" value="xdotool getactivewindow windowminimiz"/>
+      <property name="&lt;Alt&gt;F4" type="string" value="wmctrl -c :ACTIVE:"/>
+      <property name="&lt;Super&gt;s" type="string" value="pavucontrol"/>
     </property>
   </property>
   <property name="xfwm4" type="empty">

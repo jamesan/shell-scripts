@@ -1,0 +1,9 @@
+#!/bin/sh
+
+bindpacman && \
+bindtorrent && \
+echo 'Starting transmission...' && sudo systemctl start transmission && echo 'Transmission started.' && \
+transmission-remote -t all --start && \
+
+# Allow trailing backslash on the last line of the command chain
+true

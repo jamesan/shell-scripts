@@ -1,0 +1,49 @@
+#!/bin/sh
+
+#####
+#
+# Set default directory of all GTK+ 2 file dialogs.as current working directory.
+#
+#####
+#
+# Copyright 2014 James An
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# 
+#####
+
+PATH=~"/.config/gtk-2.0/gtkfilechooser.ini"     # Config file relative or absolute path
+HEADING='[Filechooser Settings]'                # Bracket-enclosed heading.
+OPTIONS=('StartupMode=cwd' 'DefaultFolder=~' )  # Array of KVP strings.
+
+DIR="`dirname "${PATH}"`"
+
+# Create the file with the heading, if it doesn't exist.
+mkdir -p "${DIR}"
+if [ -f "${PATH}" -o -z "`grep ${HEADING}" ${PATH}"`" ]; then
+    echo "${HEADING}" >> "${PATH}"
+fi
+
+for OPTION in "${OPTIONS[@]}" ; do
+
+    KEY="${OPTION%%=*}"
+
+    # Insert the option if it doesn't exist.'
+    if [ -z "`grep "${KEY}" "${PATH}"`" ]; then
+        echo "${OPTION}" >> "${PATH}"
+    # Otherwise, replace the existing option value.
+    else
+        sed -i "s/^.*${KEY}=.*$/${OPTION}/" "${PATH}"
+    fi
+done

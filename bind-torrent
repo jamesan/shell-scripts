@@ -1,0 +1,103 @@
+#!/bin/sh
+
+#####
+#
+# Mount and unmount paths to a labelled filesystem for: transmission. 
+#
+# Mount a labelled filesystem on a device and bind folders if filesystem is not mounted.
+# Bind folders not yet mounted if filesystem is already mounted but not all bind mounts are.
+# Unbind folders and unmount filesystem if filesystem and binds are already mounted.
+#
+#####
+#
+# Copyright 2014 James An
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# 
+#####
+
+# Device parameters.
+LABEL=${LABEL:-Expansion}
+DIRS=(srv/torrent var/lib/transmission)
+DPATH="Torrents"
+
+#Derived parameters
+DEVICE=`realpath "/dev/disk/by-label/${LABEL}"`
+MPATH="/media/${LABEL}"
+
+function mount_dev() {
+    echo "Mounting ${LABEL} device..."
+    echo -n "  "
+    udevil mount -o fmask=0111,dmask=0000 "${DEVICE}" || { echo "Mounting ${LABEL} device failed. Aborting..." 1>&2 ; exit ; }
+}
+
+function unmount_dev() {
+    echo "Unmounting ${LABEL} device..."
+    sudo umount "${MPATH}" || { echo "Unmounting ${LABEL} device failed. Aborting..." 1>&2 ; exit ; }
+}
+
+function mount_binds(){
+    echo "Binding system paths to device..."
+    for DIR in "${DIRS[@]}"; do
+        if [ ! -d "/${DIR}" ] ; then
+            echo "  System path, /${DIR}, does not exist. Creating..." 1>&2
+            sudo mkdir -p "${DIRSYS}"
+        fi
+        DIRBIND=`realpath "${MPATH}/${DPATH}/${DIR}"`
+
+        mountpoint -q "${DIR[0]}"
+        if [ $? -eq 0 ] ; then
+            echo "  ${DIR} is already mounted. Skipping..."
+        elif [ ! -d "${DIRBIND}" ] ; then
+            echo "  ${DIRBIND} doesn't exist. Skipping..."
+        else
+            echo "  ${DIR}..."
+            # Merge system files into mounted block device first.
+            sudo mv -f "/${DIR}"/* "${DIRBIND}" &> /dev/null
+            # Bind system path to mounted device.
+            sudo mount --bind "${DIRBIND}" "/${DIR}"
+        fi
+    done
+}
+
+function unmount_binds() {
+    echo "Unbinding system paths..."
+    for DIR in "${DIRS[@]}"; do
+            echo "  ${DIR}..."
+        sudo umount "/${DIR}"
+    done
+}
+
+case "$1" in
+-h|--help)
+    echo "usage: $0 [-h]" >&2
+    ;;
+*)
+    [ -b "${DEVICE}" ] || { echo "No block device exists with the label, ${LABEL}." 1>&2 ; exit 1; }
+
+    TMP=`grep -m 1 "${DEVICE}" /proc/mounts | cut -f2 -d' '`
+    if [ -z "${TMP}" ] ; then
+        mount_dev
+        mount_binds
+    else
+        MPATH="${TMP}"
+        mountpoint -q "/${DIRS[0]}"
+        if [ $? -eq 1 ] ; then
+            mount_binds
+        else
+            unmount_binds
+            unmount_dev
+        fi
+    fi
+esac
