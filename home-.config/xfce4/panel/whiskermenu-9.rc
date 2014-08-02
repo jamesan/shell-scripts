@@ -1,0 +1,56 @@
+favorites=
+recent=xfce-keyboard-settings.desktop,xfce-theme-manager.desktop,xfce4-taskmanager.desktop,android-sdk.desktop,xfce-workspaces-settings.desktop,xfce-session-settings.desktop,xfce-wm-settings.desktop,xfce-settings-manager.desktop,synergy.desktop,libreoffice-writer.desktop
+button-title=Applications Menu
+button-icon=xfce4-whiskermenu
+button-single-row=true
+show-button-title=false
+show-button-icon=true
+launcher-show-name=true
+launcher-show-description=true
+item-icon-size=2
+hover-switch-category=true
+category-icon-size=1
+load-hierarchy=true
+favorites-in-recent=true
+display-recent-default=true
+position-search-alternate=true
+position-commands-alternate=true
+position-categories-alternate=true
+menu-width=456
+menu-height=524
+command-settings=xfce4-settings-manager
+show-command-settings=true
+command-lockscreen=xflock4
+show-command-lockscreen=true
+command-switchuser=gdmflexiserver
+show-command-switchuser=true
+command-logout=xfce4-session-logout
+show-command-logout=true
+command-menueditor=menulibre
+show-command-menueditor=true
+search-actions=4
+
+[action0]
+name=Man Pages
+pattern=#
+command=exo-open --launch TerminalEmulator man %s
+regex=false
+
+[action1]
+name=Wikipedia
+pattern=!w
+command=exo-open --launch WebBrowser http://en.wikipedia.org/wiki/%u
+regex=false
+
+[action2]
+name=Run in Terminal
+pattern=!
+command=exo-open --launch TerminalEmulator %s
+regex=false
+
+[action3]
+name=Open URI
+pattern=^(file|http|https):\\/\\/(.*)$
+command=exo-open \\0
+regex=true
+

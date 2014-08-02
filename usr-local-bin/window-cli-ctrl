@@ -1,0 +1,52 @@
+#!/bin/bash
+
+eval $( xrandr | grep '*' | sed -e "s/^ \+\([0-9]\+\)x\([0-9]\+\).*/export WIDTH=\1 ; export HEIGHT=\2/g" )
+WIDTH_HALF=$((WIDTH/2))
+HEIGHT_HALF=$((HEIGHT/2))
+
+#wmctrl -r :ACTIVE: -b remove,maximized_horz,maximized_vert
+
+function usage() {
+    echo "Usage: `basename $0` COMMAND"
+    echo "       `basename $0` HELP }"
+    echo "Apply COMMAND on the active window."
+    echo
+    echo "where  COMMAND := { cl | close |"
+    echo "                    full | fullscreen |"
+    echo "                    max | maximize |"
+    echo "                    max-left | maximize-left |"
+    echo "                    max-right | maximize-right |"
+    echo "                    min | minimize }"
+    echo "       HELP := { h | help | -h | --help }"
+}
+
+case "$1" in
+    cl | close )
+        wmctrl -c :ACTIVE:
+        ;;
+    full | fullscreen )
+        ;;
+    max | maximize )
+        wmctrl -r :ACTIVE: -b toggle,maximized_horz,maximized_vert
+        ;;
+    max-left | maximize-left )
+        xdotool getactivewindow windowmove 0 y windowsize 50% y
+        wmctrl -r :ACTIVE: -b add,maximized_vert
+        wmctrl -r :ACTIVE: -b remove,maximized_horz
+        ;;
+    max-right | maximize-right )
+        xdotool getactivewindow windowmove $WIDTH_HALF y windowsize 50% y
+        wmctrl -r :ACTIVE: -b add,maximized_vert
+        wmctrl -r :ACTIVE: -b remove,maximized_horz
+        ;;
+    min | minimize )
+        xdotool getactivewindow windowminimize
+        ;;
+    h | help | --help | -h )
+        usage
+        ;;
+    * )
+        usage
+        exit 1
+        ;;
+esac

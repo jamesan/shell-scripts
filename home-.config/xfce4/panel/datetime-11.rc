@@ -1,0 +1,6 @@
+layout=1
+date_font=DejaVu Sans Bold 8
+time_font=DejaVu Sans Bold 8
+date_format=%a %b %d W%V
+time_format=%H:%M:%S %Z
+

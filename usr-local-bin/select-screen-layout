@@ -42,4 +42,4 @@ SELECTION=`echo "$LAYOUTS" | \
            --column='' --column='' \
            --hide-column=1 --hide-header 2> /dev/null`
 
-exec "$SELECTION"
+[ -n "${SELECTION}" ] && exec "$SELECTION"

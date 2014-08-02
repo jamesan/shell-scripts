@@ -1,0 +1,7 @@
+show_frame=false
+show_icon=false
+show_bits=false
+show_sum=true
+device=eth0
+fixed_width=70
+

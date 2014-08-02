@@ -1,0 +1,16 @@
+[G0]
+timername=Half hour
+time=1800
+timercommand=zenity --info --text=Half\\ hour\\ alarm
+timerinfo=30m 0s
+is_countdown=true
+
+[others]
+nowin_if_alarm=true
+selecting_starts=true
+use_global_command=false
+global_command=
+repeat_alarm=false
+repetitions=50
+repeat_interval=1
+
