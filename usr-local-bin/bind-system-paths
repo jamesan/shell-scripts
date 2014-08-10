@@ -1,0 +1,189 @@
+#!/bin/sh
+
+# shell script name
+# short description pf shell script
+
+# Copyright 2014 James An
+
+# THIS PROGRAM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# version string
+declare MYVER='1.0'
+
+# global constants
+declare -r -a DIRS=(srv/torrent var/lib/transmission)
+declare -r LABEL=${LABEL:-Expansion}
+declare -r REL_PATH="Arch Linux Mounts/Torrents"
+
+# Use sudo
+[ $UID -ne 0 ] && declare -r SUDO=sudo
+
+source utility-library
+
+# $1 - path to block device file
+# OUT- mount path or empty string
+get_mount_path_from_device_path() {
+    local path="$1"; shift
+    grep -m 1 "${path}" /proc/mounts | cut -f2 -d' ' | xargs echo -n
+}
+
+# $1 - block device label
+# OUT- device path or non-existent file path
+get_device_path_from_device_label() {
+    local label="$1"; shift
+    realpath "/dev/disk/by-label/${label}" | xargs echo -n
+}
+
+# derived parameters
+declare -r DEV_PATH=`get_device_path_from_device_label "${LABEL}"`
+declare    MNT_PATH=`get_mount_path_from_device_path "${DEV_PATH}"`
+
+usage () {
+    local syntax=
+    local example=
+    local opt=(
+        '-u, --usage'   'Show this usage message'
+        '-h, --help'    'Same as --usage'
+    )
+    local desc="Mounts labelled block device device and binds system paths for pacman to locations in the block device."
+    _usage myver desc syntax opt[@] example
+}
+
+# mount device and exit on failure
+mount_dev() {
+    _msg "Mounting device ${LABEL}..."
+    udisksctl mount -b "${DEV_PATH}" -o fmask=0111,dmask=0000 --no-user-interaction  &> /dev/null
+    MNT_PATH=`get_mount_path_from_device_path "${DEV_PATH}"`
+    [ -z "{MNT_PATH}" ] &&_exit_with_error 1 "Mount attempt failed. Aborting..."
+    _msg2 "Successfully mounted device at ${MNT_PATH}"
+}
+
+# bind system paths and return the number of successful bind attempts
+mount_bind() {
+    _msg "Attempting to bind system paths to device..."
+    local -i count=0
+    for DIR in "${DIRS[@]}"; do
+        SOURCE=`realpath "${MNT_PATH}/${REL_PATH}/${DIR}"`
+        TARGET="/${DIR}"
+        _msg2 "${TARGET}"
+
+        # skip conditions
+        mountpoint -q "${TARGET}"
+        if [ $? -eq 0 ] ; then
+            _plain "Already mounted; skipping..."
+            continue
+        fi
+
+        # non-skip source-related conditions
+        if [ ! -d "${SOURCE}" ] ; then
+            _error "does not exist on device; creating,.."
+            mkdir -p "${SOURCE}"
+        fi
+
+        # non-skip target-related conditions
+        if [ ! -d "${TARGET}" ] ; then
+            _warning "does not exist; creating..."
+            $SUDO mkdir -p "${TARGET}"
+        elif [ -z `find "${TARGET}" -maxdepth 0 -empty` ] ; then
+            _warning "not empty; merging into device..."
+
+            # save dotglob state and set it
+            declare -r DOTGLOB=`shopt dotglob | grep off`
+            shopt -s dotglob
+
+            $SUDO mv -bf "${TARGET}"/* "${SOURCE}"
+
+            # restore dotglob state
+            [ -n DOTGLOB ] && shopt -u dotglob
+        fi
+        $SUDO mount --bind "${SOURCE}" "${TARGET}"
+
+        [ $? -eq 0 ] && count+=1
+    done
+    return $count
+}
+
+main() {
+    case "$1" in
+        -h|--help )
+            ;&
+        -u|--usage )
+            local myver='1.0'
+            local syntax=
+            local example=
+            local opt=(
+                '-h, --help'    'Displays this usage message and exits.'
+                '-V, --version' 'Displays version information and exits.'
+                '-u, --usage'   'Displays this usage message and exits.'
+            )
+            local desc="Mounts labelled block device device and binds system paths for pacman to locations in the block device."
+            _usage MYVER desc syntax opt[@] example
+            ;;
+        -V|--version )
+            _version "${MYVER}"
+            ;;
+        '')
+            [ -b "${DEV_PATH}" ]  || _exit_with_error 1 "\"${Label}\" is not a label for a block device."
+
+            if [ -n "${MNT_PATH}" ] ; then
+                _warning "Device labeled \"${LABEL}\" is already mounted."
+
+                mount_bind
+                if [ $? -eq 0 ] ; then
+                    _msg "All bind points are already mounted. Unmounting all..."
+
+                    local -i count=0
+                    for DIR in "${DIRS[@]}"; do
+                        $SUDO umount "/${DIR}"
+                        [ $? -eq 0 ] && count+=1
+                    done
+                    if [ $count -eq "${#DIRS[@]}" ] ; then
+                        _msg2 'Successfully unmounted all bind points.'
+                        $SUDO umount -A "${DEV_PATH}"
+                        [ $? -eq 0 ] && _msg2 'Successfully unmounted device.'
+                    fi
+#                   if [ `grep "${path}" /proc/mounts | wc -l` -eq 1 ] ; then
+#                       _ask "Unmount device \"${LABEL}\" [Y/n]? "
+#                        read answer
+#                        [ ${answer^^} != N ] && $SUDO umount -A "${DEV_PATH}"
+#                        [ $? -eq 0 ] && _msg2 'Successfully unmounted device.'
+#                    fi
+                    if [ -n "`grep "${DEV_PATH}" /proc/mounts`" ] ; then
+                        _warning "Device left mounted."
+                    fi
+                fi
+            else
+                mount_dev
+
+                mount_bind
+                if [ $? -eq "${#DIRS[@]}" ] ; then
+                    _msg2 "Successfully bound all system paths."
+                else
+                    _warning "Some bind attempts failed and/or some bind points were already mounted."
+                fi
+
+            fi
+            ;;
+        *)
+            ;;
+    esac
+}
+
+# invoke main function if this script is executed as a command
+if [ "$CMD" = ${BASH_SOURCE##*/} ]; then
+    main "$@"
+# otherwise remove main function
+else
+    unset main
+fi
