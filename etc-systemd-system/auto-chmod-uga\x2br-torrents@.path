@@ -1,0 +1,10 @@
+[Unit]
+Description=Make Readable All Torrent Files Directory Watch
+After=transmission.service
+ConditionPathExists=/%I
+
+[Path]
+PathChanged=/%I
+
+[Install]
+WantedBy=transmission.service

@@ -1,0 +1,7 @@
+[Unit]
+Description=Make Readable All Torrent Files
+After=transmission.service
+ConditionPathExists=/%I
+
+[Service]
+ExecStart=/usr/bin/sh -c '/usr/bin/chmod 0644 /%I/*.torrent'
