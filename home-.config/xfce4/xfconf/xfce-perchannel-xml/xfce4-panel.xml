@@ -5,14 +5,14 @@
   <property name="panels" type="array">
     <value type="int" value="1"/>
     <property name="panel-1" type="empty">
-      <property name="position" type="string" value="p=6;x=0;y=0"/>
+      <property name="position" type="string" value="p=8;x=640;y=1007"/>
       <property name="length" type="uint" value="100"/>
       <property name="position-locked" type="bool" value="true"/>
-      <property name="size" type="uint" value="38"/>
+      <property name="size" type="uint" value="32"/>
       <property name="plugin-ids" type="array">
         <value type="int" value="9"/>
         <value type="int" value="23"/>
-        <value type="int" value="3"/>
+        <value type="int" value="1"/>
         <value type="int" value="15"/>
         <value type="int" value="4"/>
         <value type="int" value="29"/>
@@ -41,34 +41,38 @@
     </property>
   </property>
   <property name="plugins" type="empty">
-    <property name="plugin-3" type="string" value="tasklist">
-      <property name="flat-buttons" type="bool" value="true"/>
-      <property name="show-labels" type="bool" value="false"/>
-      <property name="sort-order" type="uint" value="0"/>
-      <property name="grouping" type="uint" value="0"/>
-      <property name="show-handle" type="bool" value="false"/>
-    </property>
     <property name="plugin-15" type="string" value="separator">
-      <property name="expand" type="bool" value="true"/>
+      <property name="expand" type="bool" value="false"/>
       <property name="style" type="uint" value="0"/>
     </property>
     <property name="plugin-6" type="string" value="systray">
       <property name="names-visible" type="array">
         <value type="string" value="geany"/>
         <value type="string" value="vlc"/>
-        <value type="string" value="thunar"/>
+        <value type="string" value="keepnote"/>
+        <value type="string" value="google-chrome-unstable"/>
         <value type="string" value="networkmanager applet"/>
         <value type="string" value="task manager"/>
         <value type="string" value="synkron"/>
+        <value type="string" value="thunar"/>
         <value type="string" value="steam"/>
         <value type="string" value="orage"/>
+        <value type="string" value="clementine"/>
         <value type="string" value="modem manager gui"/>
+        <value type="string" value="udiskie"/>
         <value type="string" value="synergy"/>
+        <value type="string" value="time tracker"/>
         <value type="string" value="clipman"/>
+        <value type="string" value="déjà dup backup tool"/>
         <value type="string" value="xfce4-power-manager"/>
         <value type="string" value="nvdock"/>
+        <value type="string" value="scp-dbus-service.py"/>
+        <value type="string" value="ghb"/>
+        <value type="string" value="javaembeddedframe"/>
+        <value type="string" value="remmina remote desktop client"/>
         <value type="string" value="notes"/>
         <value type="string" value="l2tpipsecvpn"/>
+        <value type="string" value="chrome"/>
         <value type="string" value="remmina"/>
       </property>
       <property name="show-frame" type="bool" value="false"/>
@@ -121,5 +125,6 @@
     <property name="plugin-11" type="string" value="datetime"/>
     <property name="plugin-12" type="string" value="xfce4-netspeed-plugin"/>
     <property name="plugin-13" type="string" value="systemload"/>
+    <property name="plugin-1" type="string" value="dockbarx"/>
   </property>
 </channel>

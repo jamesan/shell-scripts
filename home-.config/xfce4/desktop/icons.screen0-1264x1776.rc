@@ -1,0 +1,44 @@
+[Holding]
+row=0
+col=0
+
+[Android-x86 4.4-]
+row=2
+col=0
+
+[General Shared]
+row=5
+col=0
+
+[400 GB Volume]
+row=1
+col=0
+
+[Windows 8]
+row=8
+col=0
+
+[Windows 8.1 Update 1]
+row=9
+col=0
+
+[ED-PC-scratch]
+row=11
+col=0
+
+[Expansion]
+row=3
+col=0
+
+[Trash]
+row=7
+col=0
+
+[File System]
+row=4
+col=0
+
+[Home]
+row=6
+col=0
+

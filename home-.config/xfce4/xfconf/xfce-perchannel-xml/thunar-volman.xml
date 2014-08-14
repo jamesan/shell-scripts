@@ -10,4 +10,11 @@
   <property name="autobrowse" type="empty">
     <property name="enabled" type="bool" value="true"/>
   </property>
+  <property name="autorun" type="empty">
+    <property name="enabled" type="bool" value="true"/>
+  </property>
+  <property name="autoplay-video-cds" type="empty">
+    <property name="enabled" type="bool" value="true"/>
+    <property name="command" type="string" value="vlc dvd://%d"/>
+  </property>
 </channel>

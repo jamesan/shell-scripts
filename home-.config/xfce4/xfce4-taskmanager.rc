@@ -1,7 +1,7 @@
 [Settings]
 ShowAllProcesses=TRUE
 MorePrecision=TRUE
-FullCommandLine=FALSE
+FullCommandLine=TRUE
 ShowStatusIcon=TRUE
 MonitorPaintBox=TRUE
 ShowApplicationIcons=TRUE
@@ -18,5 +18,5 @@ ColumnCPU=TRUE
 ColumnPriority=TRUE
 SortColumn=0
 SortType=0
-WindowWidth=490
-WindowHeight=465
+WindowWidth=1280
+WindowHeight=974

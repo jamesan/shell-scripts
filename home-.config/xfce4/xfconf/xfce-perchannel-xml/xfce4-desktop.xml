@@ -4,31 +4,44 @@
   <property name="backdrop" type="empty">
     <property name="screen0" type="empty">
       <property name="monitor0" type="empty">
-        <property name="image-path" type="string" value="/usr/share/backgrounds/xfce/Aquarius.svg"/>
+        <property name="image-path" type="string" value="/home/jan/.config/xfce4/desktop/backdrop.list"/>
         <property name="last-image" type="string" value="/usr/share/backgrounds/xfce/Aquarius.svg"/>
         <property name="last-single-image" type="string" value="/usr/share/backgrounds/xfce/Aquarius.svg"/>
         <property name="last-image-list" type="string" value="/home/jan/.config/xfce4/desktop/backdrop.list"/>
-        <property name="image-style" type="int" value="-1"/>
+        <property name="image-style" type="int" value="-857693632"/>
         <property name="brightness" type="int" value="63"/>
         <property name="saturation" type="double" value="0.000000"/>
+        <property name="backdrop-cycle-enable" type="bool" value="true"/>
+        <property name="backdrop-cycle-timer" type="uint" value="1"/>
       </property>
       <property name="monitor1" type="empty">
-        <property name="image-path" type="string" value="/usr/share/backgrounds/xfce/CleanBlue.jpg"/>
-        <property name="last-image" type="string" value="/usr/share/backgrounds/xfce/xfce-blue.jpg"/>
+        <property name="image-path" type="string" value="/home/.config/xfce4/desktop/backdrop.list"/>
+        <property name="last-image" type="string" value="/usr/share/backgrounds/xfce/CleanBlue.jpg"/>
         <property name="last-single-image" type="string" value="/usr/share/backgrounds/xfce/CleanBlue.jpg"/>
+        <property name="image-style" type="int" value="-857693632"/>
+        <property name="brightness" type="int" value="63"/>
+        <property name="saturation" type="double" value="0.600000"/>
+        <property name="last-image-list" type="string" value="/home/.config/xfce4/desktop/backdrop.list"/>
+        <property name="backdrop-cycle-enable" type="bool" value="true"/>
+        <property name="backdrop-cycle-timer" type="uint" value="1"/>
       </property>
     </property>
   </property>
   <property name="desktop-icons" type="empty">
     <property name="icon-size" type="uint" value="32"/>
     <property name="file-icons" type="empty">
-      <property name="show-home" type="bool" value="false"/>
-      <property name="show-filesystem" type="bool" value="false"/>
-      <property name="show-trash" type="bool" value="false"/>
-      <property name="show-removable" type="bool" value="false"/>
+      <property name="show-home" type="bool" value="true"/>
+      <property name="show-filesystem" type="bool" value="true"/>
+      <property name="show-trash" type="bool" value="true"/>
+      <property name="show-removable" type="bool" value="true"/>
     </property>
-    <property name="style" type="int" value="0"/>
+    <property name="style" type="int" value="2"/>
     <property name="use-custom-font-size" type="bool" value="false"/>
-    <property name="show-thumbnails" type="bool" value="false"/>
+    <property name="show-thumbnails" type="bool" value="true"/>
+    <property name="single-click" type="bool" value="true"/>
+  </property>
+  <property name="windowlist-menu" type="empty">
+    <property name="show-submenus" type="bool" value="true"/>
+    <property name="show-sticky-once" type="bool" value="false"/>
   </property>
 </channel>

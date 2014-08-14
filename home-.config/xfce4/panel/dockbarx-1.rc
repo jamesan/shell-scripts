@@ -1,0 +1,10 @@
+[Xfce4DockbarX]
+config=true
+mode=0
+color=#652965296529
+alpha=100
+image=
+offset=0
+max_size=0
+orient=bottom
+expand=true
