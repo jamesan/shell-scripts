@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# pkg-fileparts
+# extracts parts of an Arch Linux package file name
+
+# Copyright 2014 James An
+
+# THIS PROGRAM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+declare -r VERSION=0.1.0
+source utility-library
+
+declare -r IN=$(cat /dev/stdin)
+
+main() {
+    local -r name="$(echo $IN | rev | cut -d- -f4- | rev)"
+    local -r ver="$(echo $IN | rev | cut -d- -f3 | rev)"
+    local -r rel="$(echo $IN | rev | cut -d- -f2 | rev)"
+    local -r arch="$(echo $IN | rev | cut -d- -f1 | rev | cut -d. -f1)"
+    local -r ext="$(echo $IN | rev | cut -d- -f1 | rev | cut -d. -f3-)"
+
+    # [ $? -eq 0 ] && { echo "$name" ; exit }
+
+    local -r output_file="$(mktemp)"
+    if [ $# -eq 0 ]; then
+        echo $name > $output_file
+    else
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                -n|--name)
+                    echo $name | paste $output_file - | sponge $output_file
+                    shift ;;
+                -v|--ver|--version)
+                    echo $ver | paste $output_file - | sponge $output_file
+                    shift ;;
+                -r|--rel|--release)
+                    echo $rel | paste $output_file - | sponge $output_file
+                    shift ;;
+                -a|--arch)
+                    echo $arch | paste $output_file - | sponge $output_file
+                    shift ;;
+                -e|--ext|--extension)
+                    echo $ext | paste $output_file - | sponge $output_file
+                    shift ;;
+                -h|--help|--usage)
+                    _version $VERSION
+                    exit ;;
+                *)
+                    _exit_with_error 2 "Encountered unrecognized parameter: $1. Exiting..."
+                    ;;
+            esac
+        done
+    fi
+    cut -f2- $output_file
+}
+
+# invoke main function if this script is executed as a command
+if [ "$CMD" = ${BASH_SOURCE##*/} ]; then
+    main "$@"
+# otherwise remove main function
+else
+    unset main
+fi
