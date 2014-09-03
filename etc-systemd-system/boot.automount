@@ -1,0 +1,8 @@
+[Unit]
+Description=/boot
+Before=local-fs.target umount.target
+After=systemd-journald.socket system.slice -.mount
+Wants=system.slice
+
+[Automount]
+Where=/boot

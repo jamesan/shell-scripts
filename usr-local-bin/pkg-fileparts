@@ -21,37 +21,35 @@
 declare -r VERSION=0.1.0
 source utility-library
 
-declare -r IN=$(cat /dev/stdin)
+declare -r IN=$(rev /dev/stdin | cut -d/ -f1 | rev)
 
 main() {
-    local -r name="$(echo $IN | rev | cut -d- -f4- | rev)"
-    local -r ver="$(echo $IN | rev | cut -d- -f3 | rev)"
-    local -r rel="$(echo $IN | rev | cut -d- -f2 | rev)"
-    local -r arch="$(echo $IN | rev | cut -d- -f1 | rev | cut -d. -f1)"
-    local -r ext="$(echo $IN | rev | cut -d- -f1 | rev | cut -d. -f3-)"
-
-    # [ $? -eq 0 ] && { echo "$name" ; exit }
+    local -r name="$(echo "$IN" | rev | cut -d- -f4- | rev)"
+    local -r ver="$(echo "$IN" | rev | cut -d- -f3 | rev)"
+    local -r rel="$(echo "$IN" | rev | cut -d- -f2 | rev)"
+    local -r arch="$(echo "$IN" | rev | cut -d- -f1 | rev | cut -d. -f1)"
+    local -r ext="$(echo "$IN" | rev | cut -d- -f1 | rev | cut -d. -f3-)"
 
     local -r output_file="$(mktemp)"
     if [ $# -eq 0 ]; then
-        echo $name > $output_file
+        echo "$name" > $output_file
     else
         while [ $# -gt 0 ]; do
             case "$1" in
                 -n|--name)
-                    echo $name | paste $output_file - | sponge $output_file
+                    echo "$name" | paste $output_file - | sponge $output_file
                     shift ;;
                 -v|--ver|--version)
-                    echo $ver | paste $output_file - | sponge $output_file
+                    echo "$ver" | paste $output_file - | sponge $output_file
                     shift ;;
                 -r|--rel|--release)
-                    echo $rel | paste $output_file - | sponge $output_file
+                    echo "$rel" | paste $output_file - | sponge $output_file
                     shift ;;
                 -a|--arch)
-                    echo $arch | paste $output_file - | sponge $output_file
+                    echo "$arch" | paste $output_file - | sponge $output_file
                     shift ;;
                 -e|--ext|--extension)
-                    echo $ext | paste $output_file - | sponge $output_file
+                    echo "$ext" | paste $output_file - | sponge $output_file
                     shift ;;
                 -h|--help|--usage)
                     _version $VERSION

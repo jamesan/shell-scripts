@@ -1,0 +1,8 @@
+[Unit]
+Description=/
+Before=local-fs.target systemd-journald.socket
+After=system.slice
+Wants=system.slice
+
+[Automount]
+Where=/

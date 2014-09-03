@@ -1,0 +1,12 @@
+[Unit]
+Description=/media/Android
+Before=local-fs.target
+
+[Mount]
+What=/dev/disk/by-partuuid/1b370e9a-7647-8047-b6e5-34ffb1b1776c
+Where=/media/Android
+Type=ext4
+Options=defaults,users,noatime,data=ordered
+
+[Install]
+WantedBy=local-fs.target

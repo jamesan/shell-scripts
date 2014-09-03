@@ -1,0 +1,13 @@
+[Unit]
+Description=/media/General\x20Shared
+Before=local-fs.target
+
+[Mount]
+What=/dev/disk/by-partuuid/dc860684-ce9b-2642-a820-e48254b9e1e4
+Where=/media/General Shared
+Type=exfat
+Options=defaults,users,noatime,fmask=0111,dmask=0000
+TimeoutSec=15
+
+[Install]
+WantedBy=local-fs.target

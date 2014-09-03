@@ -1,0 +1,13 @@
+[Unit]
+Description=/media/Windows
+Before=local-fs.target
+
+[Mount]
+What=/dev/disk/by-partuuid/9a2308c8-b1a5-d145-80f9-1b9ed60daa1a
+Where=/media/Windows
+Type=ntfs
+Options=defaults,users,noatime,permissions,inherit,norecover,allow_other
+TimeoutSec=15
+
+[Install]
+WantedBy=local-fs.target

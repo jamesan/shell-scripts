@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# pkg-clean_local_pkg_cache
+# delete package and signature files from the local package cache, except for the most recent version
+
+# Copyright 2014 James An
+
+# THIS PROGRAM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# remove non-package and non-signature files
+ls -1 /var/abs/local/pkg | \
+    grep -vE '\.(tar|sig|tar\.(bz2|gz|lrz|lzo|xz|Z))$' | \
+    xargs \rm
+
+# remove all but the most recent pair of package and signature files for each package
+\ls -1 /var/abs/local/pkg/*.pkg.tar* | \
+    grep -vE '\.sig$' | \
+    pkg-fileparts -n | \
+    sort | uniq -d | \
+    while read pkg; do
+        \ls -1 /var/abs/local/pkg/$pkg* | \
+            head -n -2
+    done | \
+    xargs \rm

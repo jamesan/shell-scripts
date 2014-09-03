@@ -1,0 +1,12 @@
+[Unit]
+Description=/media/ED-PC-scratch
+Before=local-fs.target
+
+[Mount]
+What=/dev/disk/by-partuuid/3bf81d83-5b06-41f9-a1d0-489ace2c1bbf
+Where=/media/ED-PC-scratch
+Type=ext4
+Options=defaults,users,noatime,data=ordered
+
+[Install]
+WantedBy=local-fs.target

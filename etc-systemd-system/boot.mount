@@ -1,0 +1,14 @@
+[Unit]
+Description=/boot
+Before=local-fs.target
+RequiresOverridable=systemd-fsck@dev-disk-by\x2dpartuuid-fc80e80f\x2d29c3\x2d6e45\x2db080\x2d7242d16928d8.service
+After=systemd-fsck@dev-disk-by\x2dpartuuid-fc80e80f\x2d29c3\x2d6e45\x2db080\x2d7242d16928d8.service
+
+[Mount]
+What=/dev/disk/by-partuuid/fc80e80f-29c3-6e45-b080-7242d16928d8
+Where=/boot
+Type=vfat
+Options=rw,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro
+
+[Install]
+WantedBy=local-fs.target

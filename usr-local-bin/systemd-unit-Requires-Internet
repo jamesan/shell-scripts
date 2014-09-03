@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# systemd-unit-Wants-Internet
+# adds dependency on Network Manager's wait online service unit (i.e. depends on access to Internet) to given unit(s)
+
+# Copyright 2014 James An
+
+# THIS PROGRAM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+source utility-library
+[ $UID -eq 0 ] && declare -r SUDO= \
+               || declare -r SUDO=sudo
+
+main() {
+    [ $# -eq 0 ] && _exit_with_error 1 "$CMD: missing unit file operand"
+
+    declare -a UNIT_DIRS=( /{usr/lib,etc,run}/systemd/system )
+    # handle only system unit files for now
+    #declare -a UNIT_DIRS=( /{usr/lib,etc,run}/systemd/{system,user} )
+    #[ -v $XDG_DATA_HOME ]   && { UNIT_DIRS[${#UNIT_DIRS[@]}]="$XDG_DATA_HOME/systemd/user"; }
+    #[ -v $XDG_CONFIG_HOME ] && { UNIT_DIRS[${#UNIT_DIRS[@]}]="$XDG_CONFIG_HOME/systemd/user"; }
+    #[ -v $HOME ]            && { UNIT_DIRS[${#UNIT_DIRS[@]}]="$HOME/.config/systemd/user"; \
+    #                             UNIT_DIRS[${#UNIT_DIRS[@]}]="$HOME/.local/share/systemd/user"; }
+
+    local -a paths=()
+    for unit in "$@"; do
+        local found=$(find "${UNIT_DIRS[@]}" -type f -name "$unit")
+        if [ -z $found ]; then
+            _error "$unit could not be found in systemd's unit file search path."
+        else
+            # allow whitespace to delimit each unit path; paths with whitespace are not allowed
+            for path in $found; do
+                paths[${#paths[@]}]="$path"
+            done
+        fi
+    done
+
+    [ ${#paths[@]} -eq 0 ] && _exit_with_error 1 "No specified units could be found."
+
+    _msg 'Adding Internet dependency to units:'
+    for path in "${paths[@]}"; do
+        local unit=$(basename "$path")
+        local unitdir="/etc/systemd/system/${unit}.d"
+        local unitdep='network-online.target'
+
+        _msg2 "$unit..."
+        $SUDO mkdir unitdir & > /dev/null
+        echo -e "[Unit]\nAfter=${unitdep}\nRequires=${unitdep}" | $SUDO tee "$unitdir/wait-online.conf" > /dev/null
+    done
+    _msg 'Reloading systemd system configuration.'
+    $SUDO systemctl daemon-reload
+    _msg 'Success!'
+}
+
+# invoke main function if this script is executed as a command
+if [ "$CMD" = ${BASH_SOURCE##*/} ]; then
+    main "$@"
+# otherwise remove main function
+else
+    unset main
+fi

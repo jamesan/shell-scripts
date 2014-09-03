@@ -1,0 +1,12 @@
+[Unit]
+Description=/
+Before=local-fs.target
+
+[Mount]
+What=/dev/disk/by-partuuid/4e3211e9-32c1-ac43-91e1-757f3b078cfc
+Where=/
+Type=ext4
+Options=defaults,rw,noatime,data=ordered
+
+[Install]
+WantedBy=local-fs.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=/media/bert-expansion
+Before=remote-fs.target
+After=NetworkManager-wait-online.service
+Wants=NetworkManager-wait-online.service
+
+[Mount]
+UMask=0000
+What=//booba/Expansion-Bert
+Where=/media/bert-expansion
+Type=cifs
+Options=rw,iocharset=utf8,sec=ntlm,credentials=/home/.smbcredentials
+TimeoutSec=15
+
+[Install]
+WantedBy=remote-fs.target
