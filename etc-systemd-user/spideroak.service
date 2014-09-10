@@ -1,0 +1,11 @@
+[Unit]
+Description=Spider Oak service
+Documentation=https://spideroak.com/faq/questions/67/how_can_i_use_spideroak_from_the_commandline/
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/SpiderOak --headless -v
+
+[Install]
+WantedBy=multi-user.target
