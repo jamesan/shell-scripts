@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# change-mac-address
+# Randomises the last two hex digits within the range 00-99
+# Assumes NIC is managed by Network Manager, i.e. it will fail in the face of any other network manager.
+
+# Copyright 2014 James An
+
+# THIS PROGRAM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Fail on all errors
+set -e
+
+source utility-library
+
+# Accept first CLI parameter as network device name
+test $# -eq 0 && \
+    declare -r NETDEV=wlan0 || \
+    declare -r NETDEV=$1
+
+# Generate new MAC address (until it's different than the original one)
+declare -r MACADDR=$(sudo ip link show wlan0 | tail -n 1 | tr -s ' ' | cut -d' ' -f3)
+#while test "$MACADDR" == "$NEWADDR"; do
+    declare NEWADDR=${MACADDR:0:-2}$((RANDOM%10))$((RANDOM%10))
+#done
+
+# Remember original state of Network Manager
+test $(sudo systemctl is-active NetworkManager.service) == active && \
+    declare -r NM_ACTIVE=
+
+# Apply new MAC address
+sudo systemctl stop NetworkManager.service wpa_supplicant.service
+sudo ip link set dev wlan0 down
+sudo ip link set dev wlan0 address $NEWADDR
+sudo ip link set dev wlan0 up
+
+# Restore original state of network services
+test -v NM_ACTIVE && sudo systemctl start NetworkManager.service || true
+
+_msg "Successfully changed $NETDEV's MAC address between these two:"
+_msg2 "$MACADDR"
+_msg2 "$NEWADDR"
