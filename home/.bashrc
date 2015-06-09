@@ -1,30 +1,37 @@
-#
 # ~/.bashrc
+#
 #
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# Set persistent environment variables
-export LESS="-RCQaix2"  # Raw control chars, clear screen, totally quiet, search skip screen, ignore case, tab stop = 4
-export EDITOR=/usr/bin/nano     # CLI editor
-export VISUAL=/usr/bin/mousepad # GUI editor
+source utility-library
 
-# Keyring daemon
-if [ -v XDG_RUNTIME_DIR ]; then
-    export GNOME_KEYRING_CONTROL=$XDG_RUNTIME_DIR/keyring
-    export GPG_AGENT_INFO=$XDG_RUNTIME_DIR/keyring/gpg:0:1
-    export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/keyring/ssh
+PATHDIRS=(
+    #~ /usr/bin/vendor_perl
+    #~ /usr/bin/core_perl
+    #~ /usr/bin/site_perl
+    $(cope_path)
+)
+for PATHDIR in "${PATHDIRS[@]}" ; do
+    [ -d "$(realpath $PATHDIR)" -a ! "$(echo $PATH | grep -q $PATHDIR)" ] && PATH=$PATHDIR:$PATH
+done
+
+# Per-session console logging
+TERM_BIN=$(ps -p $PPID -o comm=)
+TERM_BINS=(screen tmux)
+if [[ " ${TERM_BINS[*]} " =~ " $TERM_BIN " ]]; then
+    logfile="$(date -Isecond).$TERM"
+    logdir=$HOME/.log/$TERM_BIN
+    mkdir -p $logdir 2> /dev/null
+    script -qaf $logdir/$logfile.log
+    exit
 fi
 
-# Shell behaviour tweaks
-shopt -s autocd         # Change to directory if command is the path to a directory.
-shopt -s checkwinsize   # Monitors the window size and updates $LINES and $COLUMNS accordingly.
-shopt -s cmdhist        # Saves all lines of a multi-line command together in a single history entry.
-shopt -s dotglob        # Include '.'-prefixed files in the results of pathname expansion.
-shopt -s extglob        # Enable extended pattern matching in all expansion.
+msg SSH/GPG Key Agent
+$(gnome-keyring-daemon | sed 's/^/export /')
 
-## Multi-session history settings ## {{{
+msg Multi-session history settings ## {{{
 
         HISTSIZE=9000
         HISTFILESIZE=$HISTSIZE
@@ -43,186 +50,308 @@ history() {
   builtin history "$@"
 }
 
-#export PROMPT_COMMAND=_bash_history_sync;history -a;echo -en "\e]2;";history 1|sed "s/^[ \t]*[0-9]\{1,\}  //g";echo -en "\e\\"
-export PS1="\[\e[31m\]\\[\e[00;32m\]\u\[\e[00m\]@\[\e[00;31m\]\h\[\e[00m\]:\[\e[00;36m\]\w\[\e[00m\] "
+export PROMPT_COMMAND=_bash_history_sync;history -a;echo -en "\e]2;";history 1|sed "s/^[ \t]*[0-9]\{1,\}  //g";echo -en "\e\\"
+export PS1="\[\e[31m\]\\[\e[01;32m\]\u\[\e[00m\]@\[\e[01;31m\]\h\[\e[00m\] \[\e[01;36m\]\w\[\e[00m\]\$(__drush_ps1) "
 bind '"\e[A": history-search-backward'
 bind '"\e[B": history-search-forward'
 
 ## }}}
 
-# Per-session console logging
-if [[ $(ps -p $PPID -o comm=) = "tmux" ]]; then
-    logfile="$(date -Isecond).$TERM.log"
-    logdir=$HOME/.logs
-    mkdir $logdir 2> /dev/null
-    script -q $logdir/$logfile
-    exit
-fi
+msg Set DISPLAY variable
+test ! -v DISPLAY -a $(systemctl is-active display-manager.service) = active && \
+    export DISPLAY=:$(ls -1 /tmp/.X11-unix | tail -c +2)
+export VDPAU_DRIVER=va_gl
 
 # Error trapping
-EC() { echo -e '\e[1;33m'code $?'\e[m\n'; }
-trap EC ERR
+# trap 'echo -e "\e[1;33m"code $?. line $LINENO"\e[m"' ERR
 
-## Safety features ## {{{
+ulimit -S -c 0      # Don't want coredumps.
+set -o notify
+set -o noclobber
+set -o ignoreeof
+
+# Shell behaviour tweaks
+shopt -s autocd         # Change to directory if command is the path to a directory.
+shopt -s cdspell
+shopt -s cdable_vars
+shopt -s checkhash
+shopt -s checkwinsize   # Monitors the window size and updates $LINES and $COLUMNS accordingly.
+shopt -s cmdhist        # Saves all lines of a multi-line command together in a single history entry.
+shopt -s extglob        # Enable extended pattern matching in all expansion.
+shopt -s histappend histreedit histverify
+shopt -s no_empty_cmd_completion
+shopt -s sourcepath
+shopt -u mailwarn
+unset MAILCHECK        # Don't want my shell to warn me of incoming mail.
+
+export LESSOPEN="| /usr/bin/source-highlight-esc.sh %s"
+export LESS="-RCQaix2"  # Raw control chars, clear screen, totally quiet, search skip screen, ignore case, tab stop = 4
+export LESS_TERMCAP_me=$(printf '\e[0m')
+export LESS_TERMCAP_se=$(printf '\e[0m')
+export LESS_TERMCAP_ue=$(printf '\e[0m')
+export LESS_TERMCAP_mb=$(printf '\e[1;32m')
+export LESS_TERMCAP_md=$(printf '\e[1;34m')
+export LESS_TERMCAP_us=$(printf '\e[1;32m')
+export LESS_TERMCAP_so=$(printf '\e[1;44;1m')
+export EDITOR=/usr/bin/nano
+export VISUAL=/usr/bin/mousepad
+
+# User specific aliases and functions
+
+msg Safety features ## {{{
 alias cp='cp -i'                    # Prompt before overwrite
-alias mv='mv -i'                    # Prompt before overwrite
-alias rm='timeout 3 rm -Ivd --one-file-system' # Prompt before removal and halt longlasting remove commands
+alias mv='mv -iv'                   # Prompt before overwrite
+alias rm='timeout 3 rm -Iv   --one-file-system' # Prompt before removal and halt longlasting remove commands
 alias ln='ln -i'                    # Prompt before removal
+alias mkdir='mkdir -pv'
 alias chown='chown --preserve-root' # Fail on recursive operation over root
 alias chmod='chmod --preserve-root' # Fail on recursive operation over root
 alias chgrp='chgrp --preserve-root' # Fail on recursive operation over root
 alias cls=' echo -ne "\033c"'       # clear screen for real (it does not work in Terminology)
 # }}}
 
-## One-letter shortcuts ## {{{
-alias c='clear'
-alias h='history'
-alias j='jobs -l'
-# }}}
+alias df='df -h'                    # Format sizes in human-readable units
+alias du='du -c -h'                 # Format sizes in human-readable units and append grand total
+alias mkdir='mkdir -p -v'           # Create parent dirs as needed
+alias ddd='\dd '                    # Create an alternative to overloaded word, dd
+alias cd="cd -P"                    # Handle '..' physically as symbolic link components shall be resolved first
 
-## New commands ## {{{
+# Colourize command outputs
+alias diff='colordiff'
+alias grep='grep --color=always'
 
-alias nowtime=n'date +"%T %Z"'
-alias nowdate='date +"%Y-%m-%d %a W%W"'
-alias now='date +"%Y-%m-%d %a W%W, %T %Z"'
-alias nowdatetime='now'
+alias xargs='xargs '                # Allow aliases in xargs statements
+alias free='free -hlt'
+alias nano='nano -w'                # Disable word wrap
+function ping() {
+  if [ $# -eq 0 ]; then
+    ping -c5 8.8.8.8                # Default ping to 5 attempts to Google's primary DNS
+  else
+    ping -c5 "$@"                   # Default ping to 5 attempts
+  fi
+}
+alias xclip='xclip -selection clipboard -i'
+alias inbin='sudo install -Dm755 -t /usr/local/bin '
+alias trr='transmission-remote'
+alias rm-chrome-crash-dumps='sudo \rm -rf ~/.config/google-chrome-unstable-backup-crashrecovery-*'
+alias spt='speedtest'
+alias btc='bluetoothctl'
 
-alias path='echo -e ${PATH//:/\\n}'
-alias lsmount='mount | column -t | sort -k3'
-alias install-bin='install -m755 -t /usr/local/bin'
+alias boinccmd='command boinccmd --passwd $(sudo cat /var/lib/boinc/gui_rpc_auth.cfg) '
+alias boinc-on='boinccmd --set_run_mode always '
+alias boinc-auto='boinccmd --set_run_mode auto '
+alias boinc-off='boinccmd --set_run_mode never '
+alias boinc-project-status='boinccmd --get_project_status '
+alias boinc-client-status='boinccmd --get_cc_status '
+alias boinc-simple-status='boinccmd --get_simple_gui_info '
+alias boinc-state='boinccmd --get_state '
+alias boinc-host-info='boinccmd --get_host_info '
+alias boinc-transfer-history='boinccmd --get_daily_xfer_history '
+alias boinc-disk-usage='boinccmd --get_disk_usage '
+alias boinc-network-on='boinccmd --set_network_mode always; boinccmd --network_available '
+alias boinc-count-messages='boinccmd --get_message_count'
+alias boinc-get-message='boinccmd --get_messages '
+alias boinc-get-notice='boinccmd --get_notices '
+alias boinc-get-tasks='boinccmd --get_tasks '
+alias boinc-quit='boinccmd --quit '
+alias boinc-benchmarks='boinccmd --run_benchmarks '
 
-alias md5='openssl md5'
-alias sha1='openssl sha1'
-alias sha256='openssl sha256'
+# Development aliases
+alias bin-install='sudo install -m755 -t /usr/local/bin'
+alias brc-edit='geany ~/.bashrc'
+alias brc='source ~/.bashrc'
+alias debug="set -o nounset; set -o xtrace; true"
+function geany() {
+  case $(ps -o stat= -p $$) in
+    *+*) command geany "$@" & ;;
+    *) command geany "$@" ;;
+  esac
+}
 
-alias ports='ss --all --numeric --processes --ipv4 --ipv6'
-alias psc='ps xawf -eo pid,user,cgroup,args'
-alias fastping='ping -c 15 -i 0.2'
+msg VCS commands ## {{{
+export BITDIR=~/Documents/VCS/bitbucket.org
+export HUBDIR=~/Documents/VCS/github.org
+export LABDIR=~/Documents/VCS/gitlab.org
 
-alias meminfo='free -m -l -t'
-alias psmem='ps auxf | sort -nr -k 4'
-alias psmem10='ps auxf | sort -nr -k 4 | head -10'
-alias pscpu='ps auxf | sort -nr -k 3'
-alias pscpu10='ps auxf | sort -nr -k 3 | head -10'
-alias cpuinfo='lscpu'
-alias gpumeminfo='grep -i --color memory /var/log/Xorg.0.log'
+export AURDIR=~/Documents/VCS/github.org/aur-pkgs
+export NESDIR=~/Documents/VCS/github.org/aur-pkgs
+NESPREFIX=nestle-ca-
 
-# }}}
+bit-cd() {
+    test $# -gt 2 && exit 1
+    git-cd "${1:-nestle-ca}" "${2:-onemethod}" 'bitbucket.org'
+}
+hub-cd() {
+    test $# -gt 3 && exit 1
+    set -- "${1:-aur-pkgs}" "${2:-jamesan}" "${3:-github.com}"
+    repo="$1"
+    user="$2"
+    domain="$3"
+    path=~/Documents/VCS/$domain/$name
+    addr="git@$domain:$user/$repo.git"
+    if [ -d "$path" ]; then
+        git -C $path pull
+    else
+        if [ "$domain" != 'local' ]; then
+            git clone $addr $path
+        else
+            git -C $path init
+        fi
+    fi
+    pushd "$path"
+}
+lab-cd() {
+    test $# -gt 2 && exit 1
+    git-cd "${1:-drupal-ec2-scripts}" "${2:-jamesan}" 'gitlab.com'
+}
 
-## Default options ## {{{
-alias bc='bc -l'            # Auto-include math library
-alias cd="cd -P"            # Handle '..' physically as symbolic link components shall be resolved first
-alias df='df -H'            # Format sizes in human-readable units
-alias du='du -ch'           # Format sizes in human-readable units and append grand total
-alias mkdir='mkdir -pv'     # Create parent dirs as needed
-alias nano='nano -w'        # Disable word wrap
-alias ping='ping -c 5'      # Default ping to 5 attempts
-alias wget='wget -c'        # Auto-resume downloads
+
+function nes-cd() {
+    test $# -gt 0 || 1=frontend
+    REPO_NAME="nestle-ca-$1"; shift
+    bit-cd $REPO_NAME "$*"
+}
+
+nes-cd() {
+    test $# -gt 1 && exit 1
+    if [ $# -eq 0 ]; then
+        bit-cd 'nestle-ca'
+    else
+        bit-cd "nestle-ca-$1"
+    fi
+}
+# Aliases that silently ignore parameters
+alias aurploader='aurploader -akvn -c ~/.config/aurploader.cookie -l ~/.config/aurploader *.src.tar.gz'
+alias aur-log='git -C $AURDIR log; true '
+alias aur-push='git -C $AURDIR pull; true '
+alias aur-pull='git -C $AURDIR push; true '
+alias aur-sync='aur-push && aur-pull && true'
+function aur-clean() {
+    find $AURDIR -type f -iname '*.pkg.tar*' -exec rm -f {} +
+    find $AURDIR -type f -iname '*.src.tar*' -exec rm -f {} +
+}
+
+# Aliases that accept optionally parameters
+alias aur-status='git -C $AURDIR status '
+function aur-cd() {
+    if [ $# -gt 0 -a ! -d "$AURDIR/$*" ]; then
+        aur-dl "$*"
+    fi
+    pushd "$AURDIR/$*"
+}
+function aur-add() {
+    if [ $# -eq 0 ]; then
+        git -C $AURDIR add '.'
+    else
+        git -C $AURDIR add "$@"
+    fi
+}
+function aur-commit() {
+    if [ $# -eq 0 ]; then
+        git -C $AURDIR commit
+    else
+        git -C $AURDIR commit -m "$*"
+    fi
+    aur-sync
+}
+
+# Aliases that must be passed parameters
+function aur-dl() {
+    [ $# -gt 0 ] || exit 1
+    pushd $AURDIR
+    yaourt -G "$@"
+    popd
+    for PKG in "$@"; do
+        aur-add $PKG
+        aur-commit "Added $PKG from the AUR."
+    done
+    aur-sync
+    aur-status
+}
+function aur-makepkg() {
+    [ $# -gt 0 ] || exit 1
+    aur-clean
+    aur-sync
+    for PKG in "$@"; do
+        if [ -d $AURDIR/$PKG ]; then
+            pushd $AURDIR/$PKG
+            makepkg -s
+            popd
+        fi
+    done
+    aur-clean
+    aur-status
+}
+function aur-up() {
+    if [ $# -eq 0 ]; then
+        aur-up $(basename $(pwd))
+    fi
+    aur-clean
+    aur-sync
+    for PKG in "$@"; do
+        if [ -d $AURDIR/$PKG ]; then
+            pushd $AURDIR/$PKG
+            mkaurball
+            aurploader -aknvc ~/.config/aurploader.cookie -l ~/.config/aurploader
+            popd
+        fi
+    done
+    aur-clean
+    aur-status
+}
+
 ## }}}
 
-# Replace existing commands
-alias diff='colordiff'
+alias hist='history'
 alias more='less'
-alias pgrep='psc|grep'
-alias su='sudo -i'
-
-# Colourise commands
-for cmd in \
-        ls grep egrep fgrep pacman ; do
-    alias "${cmd}=${cmd} --color=always"
-done
-
-# Abbreviations
-alias xci='xclip -selection clipboard -i'
-alias xco='xclip -selection clipboard -o'
+alias du0='du --max-depth=0'
 alias du1='du --max-depth=1'
-alias du2='du --max-depth=2'
-alias du3='du --max-depth=3'
-alias ee='exit'
-alias inbin='install-bin'
-alias r1='!-1'
-alias r2='!-2'
-alias r3='!-3'
-alias r4='!-4'
-alias r5='!-5'
-alias trr='transmission-remote'
+
+alias ports='ss -rlps46x'
+alias psc='ps xawf -eo pid,user,cgroup,args'
+alias pgrep='psc|grep'           # requires an argument
 
 # Error tolerance
 alias :q=' exit'
 alias :Q=' exit'
 alias :x=' exit'
+alias cd..='cd ..'
+alias   ..='cd ..'
+alias ecit='exit'
+alias eit='exit'
+alias exut='exit'
 
-## ls ## {{{
-alias lh='ls -hF'
-alias l1='lh -1'                    # listing
-alias lr='lh -R'                    # recursive ls
-alias ll='lh -l'                    # long listing
-alias la='ll -A'
-alias lx='ll -BX'                   # sort by ext
-alias lz='ll -rS'                   # sort by size
-alias lt='ll -rt'                   # sort by date
-alias l.='ll -d .*'                 # list hidden files
-alias lm='l. | more'                # paginate with hidden files
-# }}}
+alias edit='[ -v "${VISUAL}" ] && echo "$VISUAL" || ( [ -n "${EDITOR}" ] && echo "$EDITOR" || echo ''less'' )'
 
-## cd ## {{{
-alias  cd..='cd ..'
-alias    ..='cd ..'
-alias   ...='cd ../../../'
-alias  ....='cd ../../../../'
-alias .....='cd ../../../../'
-alias    .3='cd ../../../'
-alias    .4='cd ../../../../'
-alias    .5='cd ../../../../..'
-# }}}
-
-
-## Auto-sudo privileged commands ## {{{
+# Auto-sudo privileged commands
 if [ $UID -ne 0 ]; then
     alias sudo='sudo '
-    alias suedit='ex sudo -e'
+    alias suedit='sudo -e'
     for cmd in \
-            chroot fdisk gdisk cgdisk sgdisk mount umount lsblk blkid \
-            losetup partprobe dd hdparm sdparm \
-            foremost ccm ccm64 ccm32 \
-            chown chmod chgrp install \
-            lsof lslogins lspci lsusb lsusb.py \
+            chroot fdisk gdisk cgdisk sgdisk mount umount losetup partprobe dd \
+            partclone.{btrfs,chkimg,dd,ext2,ext3,ext4,ext4dev,extfs,fat,fat12,fat16,fat32,hfs+,hfsp,hfsplus,imager,info,ntfs,ntfsfixboot,ntfsreloc,reiserfs,restore,vfat} \
+            syslinux-install_update gummiboot mkinitcpio \
+            foremost \
+            lspci lsusb lsusb.py iotop \
             rmmod modprobe usermod dkms modinfo lsmod \
-            pdnsd-ctl journalctl systemctl \
-            pkill kill ps htop iotop \
-            pacman updatedb powerpill pacman-optimize \
+            auditctl systemctl \
+            pkill kill ps htop \
+            chown chmod chgrp \
+            pacman updatedb powerpill pacman-optimize localepurge \
+            pkgfile arch-chroot \
+            arch-nspawn makechrootpkg mkarchroot \
+            ccm ccm32 ccm64 clean-chroot-manager32 clean-chroot-manager64 \
             wifi-menu netctl netctl-auto rfkill \
-          ; do
+            hdparm sdparm ; do
         alias $cmd="sudo $cmd"
     done
 fi
-## }}}
 
-## Systemd system and service manager ## {{{
-
-# System service manager
-alias sys='systemctl'
-alias syss='sys start'
-alias syst='sys stop'
-alias syse='sys enable'
-alias sysd='sys disable'
-alias sysr='sys reload-or-try-restart'
-alias sysR='sys try-restart'
-alias sysS='sys status'
-alias sysF='sys --failed'
-alias sysA='sys --all'
-
-# User service manager
-alias sysu='\systemctl --user'
-alias sysus='sysu start'
-alias sysut='sysu stop'
-alias sysue='sysu enable'
-alias sysud='sysu disable'
-alias sysur='sysu reload-or-try-restart'
-alias sysuR='sysu try-restart'
-alias sysuS='sysu status'
-alias sysuF='sysu --failed'
-alias sysuA='sysu --all'
+# Auto-execute commands in subshell
+#for cmd in \
+#        suedit edit ; do
+#    alias $cmd="ex $cmd"
+#done
 
 # Power commands.
 alias hibernate='sys hibernate'
@@ -231,35 +360,112 @@ alias reboot='sys reboot'
 alias poweroff='sys poweroff'
 alias suspend='sys suspend'
 
-## }}}
+# System service manager
+alias sys='systemctl'
+alias syst='sys start'
+alias sysp='sys stop'
+alias syse='sys enable'
+alias sysd='sys disable'
+alias sysr='sys reload-or-try-restart'
+alias sysR='sys try-restart'
+alias sysS='sys status'
+alias sysD='sys daemon-reload'
+alias sysI='sys isolate'
+alias sysf='sys reset-failed'
+alias sysF='sys --failed'
+alias sysA='sys --all'
 
-## Arch Linux package management ## {{{
+# User service manager
+alias sysu='\systemctl --user'
+alias sysut='sysu start'
+alias sysup='sysu stop'
+alias sysue='sysu enable'
+alias sysud='sysu disable'
+alias sysur='sysu reload-or-try-restart'
+alias sysuR='sysu try-restart'
+alias sysuS='sysu status'
+alias sysuD='sysu daemon-reload'
+alias sysuI='sysu isolate'
+alias sysuf='sysu reset-failed'
+alias sysuF='sysu --failed'
+alias sysuA='sysu --all'
 
+# Specific service manager commands
+alias syscli='sysI multi-user.target'
+alias sysgui='sysI graphical.target'
+
+function syss() {
+    syst "$@"
+    sysS "$@"
+}
+
+function sysus() {
+    sysut "$@"
+    sysuS "$@"
+}
+
+# Package manager
 alias pac='yaourt'
 alias pack='package-query'
-alias pacsyu='pac -Syau'             # Synchronize local and ABS with repositories and then upgrade local packages that are out of date
-alias pacsy='pac -Sya'               # Update and refresh the package list against repositories
-alias pacsc='pac -Sc'               #
-alias pacs='pac -S'                 # Install specific package(s) from the repositories
-alias pacu='pac -U'                 # Install specific package from a local file
-alias pacsd='pac -S --asdeps'       # Install given package(s) as dependencies of another package
-alias pacud='pac -U --asdeps'       # Install given package(s) from a local file as dependencies of another package
-alias pacr='pac -R'                 # Remove the specified package(s), retaining its configuration(s) and required dependencies
-alias pacrns='pac -Rns'             # Remove the specified package(s), its configuration(s) and unneeded dependencies
-alias pacs!='pac -S --noconfirm'    # Install specific package(s) from the repositories
-alias pacu!='pac -U --noconfirm'     # Install specific package from a local file
-alias pacsd!='pac -S --asdeps --noconfirm' # Install given package(s) as dependencies of another package
-alias pacud!='pac -U --asdeps --noconfirm' # Install given package(s) from a local file as dependencies of another package
-alias pacr!='pac -R --noconfirm'                 # Remove the specified package(s), retaining its configuration(s) and required dependencies
-alias pacrns!='pac -Rns --noconfirm'             # Remove the specified package(s), its configuration(s) and unneeded dependencies
+
+# Cache management
+alias pacsy='pac -Sy'
+alias pacsc='pac -Sc'
+alias pacsyy='pac -Syy'
+alias pacscc='pac -Scc'
+
+# Package (un)installation
+alias pacsyu='pac -Syu'
+alias pacsyau='pac -Syau'
+alias pacsau='pac -Sau'
+alias pacs='pac -S'
+alias pacu='pac -U'
+alias pacsd='pac -S --asdeps'
+alias pacud='pac -U --asdeps'
+alias pacr='pac -R'
+alias pacrns='pac -Rns'
+
+# Package installation - no interaction
+alias pacsyu!='pac -Syu --noconfirm'
+alias pacsyau!='pac -Syau --noconfirm'
+alias pacsau!='pac -Sau --noconfirm'
+alias pacs!='pac -S --noconfirm'
+alias pacu!='pac -U --noconfirm'
+alias pacsd!='pac -S --asdeps --noconfirm'
+alias pacud!='pac -U --asdeps --noconfirm'
+alias pacr!='pac -R --noconfirm'
+alias pacrns!='pac -Rns --noconfirm'
+
+# Remote queries
 alias pacsi='pac -Si'               # Display information about a given package in the repositories
-alias pacas='pack -As --sort w'     # Search for package(s) in the repositories
-alias pacss='pack -Ss --sort n'     # Search for package(s) in the repositories
 alias pacsl='pac -Sl'               # Search for package(s) in the repositories
+alias pacss='pack -Ss --sort n'
+function pacas(){
+    pack -Ss --sort n "$@"          # Search for package(s) in the repositories
+    pack -As --sort w "$@"          # Search for package(s) in the AUR
+}
+
+# Local queries
 alias pacqi='pac -Qi'               # Display information about a given package in the local database
 alias pacqs='pack -Qs --sort n'     # Search for package(s) in the local database
 alias pacql='pac -Ql'               # Search for package(s) in the local database
-alias pacqo='pac -Qo'               # Search for package(s) that own the specified file(s)
+function pacqo() {                  # Search for package(s) that own the specified file(s)
+  [ $# -eq 0 ] && return
+  files=()
+  for file in "$@"; do
+    [ -a $file ] || file=$(which "$file")
+    [ $? -eq 0 ] && files+=("$file")
+  done
+  [ ${#files[@]} -gt 0 ] && pac -Qo "${files[@]}"
+}
+
+# Database changes
+alias pacddep='pac -D --asdeps'
+alias pacdexp='pac -D --asexplicit'
+
+# Paacman lock changes
+alias pacunlock="sudo rm /var/lib/pacman/db.lck"   # Delete the lock file /var/lib/pacman/db.lck
+alias paclock="sudo touch /var/lib/pacman/db.lck"  # Create the lock file /var/lib/pacman/db.lck
 
 # '[r]emove [o]rphans' - recursively remove ALL orphaned packages
 alias pacro="/usr/bin/pacman -Qtdq > /dev/null && sudo /usr/bin/pacman -Rns \$(/usr/bin/pacman -Qtdq | sed -e ':a;N;$!ba;s/\n/ /g')"
@@ -267,33 +473,69 @@ alias pacro="/usr/bin/pacman -Qtdq > /dev/null && sudo /usr/bin/pacman -Rns \$(/
 alias pacman-disowned-dirs="comm -23 <(sudo find / \( -path '/dev' -o -path '/sys' -o -path '/run' -o -path '/tmp' -o -path '/mnt' -o -path '/srv' -o -path '/proc' -o -path '/boot' -o -path '/home' -o -path '/root' -o -path '/media' -o -path '/var/lib/pacman' -o -path '/var/cache/pacman' \) -prune -o -type d -print | sed 's/\([^/]\)$/\1\//' | sort -u) <(pacman -Qlq | sort -u)"
 alias pacman-disowned-files="comm -23 <(sudo find / \( -path '/dev' -o -path '/sys' -o -path '/run' -o -path '/tmp' -o -path '/mnt' -o -path '/srv' -o -path '/proc' -o -path '/boot' -o -path '/home' -o -path '/root' -o -path '/media' -o -path '/var/lib/pacman' -o -path '/var/cache/pacman' \) -prune -o -type f -print | sort -u) <(pacman -Qlq | sort -u)"
 
-## }}}
+## ls ## {{{
+eval $(dircolors -b)
+alias ls='ls -hF --color=auto'
+alias lr='ls -R'                    # recursive ls
+alias ll='ls -l'
+alias lld='ll -d'
+alias la='ll -A'
+alias lx='ll -BX'                   # sort by extension
+alias lz='ll -rS'                   # sort by size
+alias lt='ll -rt'                   # sort by date
+alias lm='la | more'
+# }}}
+
+## drush ##
+alias drush='drush '
+alias drhm='drush @hm '
+alias drn='drush @nestle.lacolhost.com '
+alias sua='sudo -Hu aegir '
+alias drs='sua drush @staging.lacolhost.com '
+alias pv='provision-verify '
+drush site-set -
+
+reset-aegir() {
+    sudo systemctl stop aegir.target aegir.service mysqld.service nginx.service php-fpm.service
+    sudo pacman -Rns --noconfirm aegir aegir-hostmaster aegir-provision
+    getent passwd aegir && sudo userdel -r aegir
+    getent group aegir && sudo groupdel aegir
+
+    sudo rm -rf /var/lib/aegir
+    sudo rm -rf /var/lib/mysql
+    sudo install -dm700 -o mysql -g mysql /var/lib/mysql
+    sudo mysql_install_db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
+    sudo systemctl daemon-reload
+    sudo systemctl start mysqld.service nginx.service php-fpm.service
+    echo -ne "\ny\nroot\nroot\n\n\n\n\n" | mysql_secure_installation
+
+    aur-cd aegir-provision && makepkg -si --noconfirm
+    aur-cd aegir-hostmaster && makepkg -si --noconfirm
+    aur-cd aegir && makepkg -si --noconfirm
+    sudo systemctl daemon-reload
+}
+
+#~## EC2 tools for personal account ##
+#~function ec2-ja() {
+    #~export AWS_ACCESS_KEY="AKIAJPJH2VZ57GJRTMDQ"
+    #~export AWS_SECRET_KEY="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"
+    #~export EC2_URL="https://ec2.us-east-1.amazonaws.com"
+#~}
+#~## EC2 tools for OneMethod ##
+#~function ec2-om() {
+    #~export AWS_ACCESS_KEY="AKIAJGYQ7GZYJ5Y64ZWQ"
+    #~export AWS_SECRET_KEY="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"
+    #~export EC2_URL="https://ec2.us-east-1.amazonaws.com"
+#~}
+#~ec2-ja
 
 # Execute command in a subshell
 function ex() {
     exec "$@" &> /dev/null &
 }
 
-# Edit arguments as files with default editor in subshell
-function edit() {
-    if [ $UID -ne 0 ]; then
-        SUDO='sudo'
-    else
-        SUDO=
-    fi
-
-    if [ -n "${VISUAL}" -a -x "${VISUAL}" ]; then
-        ex "${SUDO}" "${VISUAL}" "$@"
-    elif [ -n "${EDITOR}" -a -x "${EDITOR}" ]; then
-        ex "${SUDO}" "${VISUAL}" "$@"
-    else
-        "${SUDO}" less "$@"
-    fi
-}
-
 # Swap two files
-function swap()
-{
+function swap() {
     if [ $# -ne 2 ]; then
         echo "Usage: swap file1 file2"
     else
@@ -303,121 +545,39 @@ function swap()
     fi
 }
 
-# Multi-format archie extractor
-# extract [file1] [file2] [file3] ...
-extract() {
-    local c e i
-
-    (($#)) || return
-
-    for i; do
-        c=''
-        e=1
-
-        if [[ ! -r $i ]]; then
-            echo "$0: file is unreadable: \`$i'" >&2
-            continue
-        fi
-
-        case $i in
-            *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
-                   c=(bsdtar xvf);;
-            *.7z)  c=(7z x);;
-
-            *.Z)   c=(uncompress);;
-            *.bz2) c=(bunzip2);;
-            *.exe) c=(cabextract);;
-            *.gz)  c=(gunzip);;
-            *.rar) c=(unrar x);;
-            *.xz)  c=(unxz);;
-            *.zip) c=(unzip);;
-            *)     echo "$0: unrecognized file extension: \`$i'" >&2
-                   continue;;
-        esac
-
-        command "${c[@]}" "$i"
-        ((e = e || $?))
-    done
-    return "$e"
-}
-
-# List loaded kernel modules and their properties
-function aa_mod_parameters() {
-    N=/dev/null;
-    C=`tput op` O=$(echo -en "\n`tput setaf 2`>>> `tput op`");
-    for mod in $(cat /proc/modules|cut -d" " -f1);
-    do
-        md=/sys/module/$mod/parameters;
-        [[ ! -d $md ]] && continue;
-        m=$mod;
-        d=`modinfo -d $m 2>$N | tr "\n" "\t"`;
-        echo -en "$O$m$C";
-        [[ ${#d} -gt 0 ]] && echo -n " - $d";
-        echo;
-        for mc in $(cd $md; echo *);
-        do
-            de=`modinfo -p $mod 2>$N | grep ^$mc 2>$N|sed "s/^$mc=//" 2>$N`;
-            echo -en "\t$mc=`cat $md/$mc 2>$N`";
-            [[ ${#de} -gt 1 ]] && echo -en " - $de";
-            echo;
-        done;
-    done
-}
-function show_mod_parameter_info() {
-    if tty -s <&1
-    then
-        green="\e[1;32m"
-        yellow="\e[1;33m"
-        cyan="\e[1;36m"
-        reset="\e[0m"
+# Delect default date format if none specified
+function date() {
+    if [ $# -eq 0 ]; then
+        command date "+%a, %b %d, %Y [%T]"
     else
-        green=
-        yellow=
-        cyan=
-        reset=
+        command date "$@"
     fi
-    newline=$'\n'
-
-    while read mod
-    do
-        md=/sys/module/$mod/parameters
-        [[ ! -d $md ]] && continue
-        d="$(modinfo -d $mod 2>/dev/null | tr "\n" "\t")"
-        echo -en "$green$mod$reset"
-        [[ ${#d} -gt 0 ]] && echo -n " - $d"
-        echo
-        pnames=()
-        pdescs=()
-        pvals=()
-        pdesc=
-        add_desc=false
-        while IFS="$newline" read p
-        do
-            if [[ $p =~ ^[[:space:]] ]]
-            then
-                pdesc+="$newline    $p"
-            else
-                $add_desc && pdescs+=("$pdesc")
-                pname="${p%%:*}"
-                pnames+=("$pname")
-                pdesc=("    ${p#*:}")
-                pvals+=("$(cat $md/$pname 2>/dev/null)")
-            fi
-            add_desc=true
-        done < <(modinfo -p $mod 2>/dev/null)
-        $add_desc && pdescs+=("$pdesc")
-        for ((i=0; i<${#pnames[@]}; i++))
-        do
-            printf "  $cyan%s$reset = $yellow%s$reset\n%s\n" \
-                ${pnames[i]} \
-                "${pvals[i]}" \
-                "${pdescs[i]}"
-        done
-        echo
-
-    done < <(cut -d' ' -f1 /proc/modules | sort)
 }
 
-# Apply Bash completion functions to all aliases.
+# Include aliases and functions in which command
+function which() {
+    (alias; declare -f) | env PATH="$(pwd)":$PATH $(/usr/bin/which which) --tty-only --read-alias --read-functions --show-tilde --show-dot $@
+}
 
-[ -r /usr/local/bin/bash-completion-alias  ] && /usr/local/bin/bash-completion-alias
+function varpush() {
+    for VAR in "$@"; do
+        declare -ga ${VAR}___STACK
+        eval "${VAR}___STACK+=(\$$VAR)"
+        export ${VAR}___STACK
+        unset $VAR
+    done
+}
+
+function varpop() {
+    for VAR in "$@"; do
+        unset $VAR
+        if [ $(eval "echo \${#${VAR}___STACK[@]}") -gt 0 ]; then
+            eval "let NUM=\${#${VAR}___STACK[@]}-1 1"
+            eval "$VAR=\${${VAR}___STACK[$NUM]}"
+            eval "${VAR}___STACK=(\${${VAR}___STACK[@]:0:$NUM})"
+            if [ $NUM -eq 0 ]; then
+                unset ${VAR}___STACK
+            fi
+        fi
+    done
+}
